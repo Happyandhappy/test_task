@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Poor Man's Twitter</title>
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+
+</head>
+<body>
+    <div id="main">
+        <div class="container mt-5">
+            <h1 class="text-center"> Poor Man's Twitter </h1>
+
+            <!-- Validation Error list -->
+            <p v-if="errors.length" class="text-danger mt-5">
+                <b>Please correct the following error(s):</b>
+                <ul  class="text-danger">
+                  <li v-for="error in errors">[[ error ]]</li>
+                </ul>
+            </p>
+
+
+            <!-- Tweet Form -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" v-model="name" class="form-control" name="name" id="name">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Message</label>
+                        <input type="text" v-model="message" class="form-control" name="message" id="message">
+                    </div>
+                </div>
+                <div class="col-md-12 mt-5 text-center">
+                    <button class="btn btn-primary" @click="submitForm">Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tweet List -->
+        <div class="container mt-5">
+            <h1 class="text-center"> Tweets List </h1>
+
+            <table class="table table-bordered text-center">
+                <thead>
+                    <tr>
+                        <th>
+                            <a href="#" @click="sortBy('name')">NAME</a>
+                        </th>
+                        <th>
+                            MESSAGE
+                        </th>
+                        <th>
+                            <a href="#" @click="sortBy('create_at')">CREATED AT</a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="tweet in tweets">
+                        <td> [[ tweet.name ]] </td>
+                        <td> [[ tweet.message ]] </td>
+                        <td> [[ tweet.create_at ]] </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.10/lodash.min.js"></script>
+
+
+    <script>
+        new Vue({
+            el: "#main",
+            delimiters: ["[[", "]]"],
+            data: {
+                tweets: [],
+                name: null,
+                message: null,
+                created_at: new Date().toISOString(),
+                orderState: 'desc', // 0: asc, 1: desc,
+                errors: [],
+            },
+            created(){
+                axios.get(`/api/`).
+                    then(({data}) => {
+                        this.tweets = data;
+                        console.log(data);
+                    }).catch(({message}) => {
+                        alert(message);
+                    });
+            },
+            methods: {
+                submitForm(){
+                    // validate fields
+                    this.errors = [];
+                    if (!this.name) {
+                        this.errors.push('Name required.');
+                    }
+                    if (!this.message) {
+                        this.errors.push('Message required.');
+                    }
+                    if (this.errors.length) return;
+
+                    // Submit data
+                    const data = {
+                        name: this.name,
+                        message: this.message,
+                    };
+                    axios.post('/api/', data).
+                        then(({data}) => {
+                            this.tweets.push(data);
+
+                            // clear the form
+                            this.name = null;
+                            this.message = null;
+                        }).catch(({message}) => {
+                            alert(message);
+                        });
+                },
+                sortBy(sortKey){
+                    // Sort by Name or Create_at field
+                    this.orderState = this.orderState === 'desc' ? 'asc' : 'desc';
+                    this.tweets = _.orderBy(this.tweets, [sortKey], [this.orderState])
+                },
+            },
+        })
+    </script>
+</body>
+</html>
